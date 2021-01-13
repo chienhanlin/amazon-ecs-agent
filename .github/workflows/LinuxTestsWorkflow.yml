@@ -1,7 +1,7 @@
 name: Linux
 on:
   pull_request:
-    types: [opened, edited, labeled]
+    types: [opened, synchronize, labeled]
 jobs:
   al2-integ-test:
     if: ${{ github.event.label.name == 'bot\test' }}
