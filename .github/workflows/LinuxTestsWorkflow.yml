@@ -11,16 +11,6 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: 1.15.4
-      - uses: actions/checkout@v2
-        with:
-          submodules: true
-          path: src/github.com/aws/amazon-ecs-agent
-      - name: make run-integ-test
-        run: |
-          export GOPATH=$GITHUB_WORKSPACE
-          cd $GITHUB_WORKSPACE/src/github.com/aws/amazon-ecs-agent
-          export CGROUP_PATH="/sys/fs/cgroup"
-          make run-integ-tests
   when-pr-is-open-test:
     name: The PR is opened!
     runs-on: [ self-hosted, Linux, X64, al2 ]
