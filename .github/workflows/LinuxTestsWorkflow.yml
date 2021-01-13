@@ -1,10 +1,11 @@
 name: Build
 on:
   pull_request:
-    types: [ labeled ]
+    types: [ labeled, review_requested ]
 jobs:
   linux-X64-unit-test:
     if: ${{ github.event.label.name == 'bot\test' }}
+    name: Linux X64 Unit Tests
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -24,6 +25,7 @@ jobs:
           make analyze-cover-profile
   linux-arm64-unit-test:
     if: ${{ github.event.label.name == 'bot\test' }}
+    name: Linux ARM64 Unit Tests
     runs-on: [self-hosted, linux, '${{ matrix.arch }}', '${{ matrix.type }}']
     strategy:
       fail-fast: false
@@ -46,6 +48,7 @@ jobs:
           make analyze-cover-profile
   integ-test:
     if: ${{ github.event.label.name == 'bot\test' }}
+    name: Linux Integration Tests
     runs-on: [self-hosted, linux, '${{ matrix.arch }}', '${{ matrix.type }}']
     strategy:
       fail-fast: false
@@ -69,3 +72,19 @@ jobs:
           cd $GITHUB_WORKSPACE/src/github.com/aws/amazon-ecs-agent
           export CGROUP_PATH="/sys/fs/cgroup"
           make run-integ-tests
+  sha-test:
+    if: ${{ github.event.label.name == 'bot\test' }}
+    name: Linux Integration Tests
+    runs-on: [ self-hosted, linux, '${{ matrix.arch }}', '${{ matrix.type }}', '${{ github.sha }}' ]
+    strategy:
+      fail-fast: false
+      matrix:
+        type: [ al1, al2, inf, gpu ]
+        arch: [ X64 ]
+        include:
+          - type: arm
+            arch: ARM64
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.15.4
