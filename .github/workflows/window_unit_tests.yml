@@ -1,11 +1,9 @@
-name: Windows
-
+name: Windows Unit Tests
 on:
   pull_request:
-    types: [ labeled, review_requested ]
+    types: [opened, synchronize]
 jobs:
   windows-unit-tests:
-    name: Windows unit tests
     runs-on: windows-latest
     steps:
       - uses: actions/setup-go@v2

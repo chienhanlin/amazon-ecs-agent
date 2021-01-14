@@ -1,19 +1,16 @@
-name: Linux Integration Test Suites
+name: AL2 Integration Test Suite
 on:
   pull_request:
     types: [labeled]
 jobs:
   linux-integ-test:
-    if: ${{ github.event.label.name == 'all\test' }}
+    if: ${{ github.event.label.name == 'bot\test' }}
     runs-on: [self-hosted, linux, '${{ matrix.arch }}', '${{ matrix.type }}']
     strategy:
       fail-fast: false
       matrix:
-        type: [al1, al2, inf, gpu]
+        type: [al2]
         arch: [X64]
-        include:
-          - type: arm
-            arch: ARM64
     steps:
       - uses: actions/setup-go@v2
         with:
