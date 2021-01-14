@@ -1,0 +1,30 @@
+name: Linux Integration Tests
+on:
+  pull_request:
+    types: [labeled]
+jobs:
+  integ-test:
+    if: ${{ github.event.label.name == 'bot\test' }}
+    runs-on: [self-hosted, linux, '${{ matrix.arch }}', '${{ matrix.type }}']
+    strategy:
+      fail-fast: false
+      matrix:
+        type: [al1, al2, inf, gpu]
+        arch: [X64]
+        include:
+          - type: arm
+            arch: ARM64
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.15.4
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          path: src/github.com/aws/amazon-ecs-agent
+      - name: make run-integ-tests
+        run: |
+          export GOPATH=$GITHUB_WORKSPACE
+          cd $GITHUB_WORKSPACE/src/github.com/aws/amazon-ecs-agent
+          export CGROUP_PATH="/sys/fs/cgroup"
+          make run-integ-tests
