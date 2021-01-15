@@ -1,10 +1,11 @@
 name: Listener ARM Unit Test
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [labeled]
 jobs:
   search-target-runner:
-    runs-on: [self-hosted, linux, X64, listener]
+    if: ${{ github.event.label.name == 'listen' }}
+    runs-on: [ self-hosted, linux, X64, listener ]
     outputs:
       output1: ${{ steps.step1.outputs.sha8 }}
     steps:
@@ -35,3 +36,7 @@ jobs:
       - name: make test
         run: |
           export GOPATH=$GITHUB_WORKSPACE
+          cd $GITHUB_WORKSPACE/src/github.com/aws/amazon-ecs-agent
+          export CGROUP_PATH="/sys/fs/cgroup"
+          make test-silent
+          make analyze-cover-profile
