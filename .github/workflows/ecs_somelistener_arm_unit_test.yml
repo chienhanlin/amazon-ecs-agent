@@ -1,25 +1,24 @@
 name: Listener ARM Unit Test
 on:
   pull_request:
-    types: [labeled]
+    types: [opened, synchronize]
 jobs:
-  check-runner:
-    if: ${{ github.event.label.name == 'listen' }}
+  search-target-runner:
     runs-on: [self-hosted, linux, X64, listener]
     strategy:
       fail-fast: false
     steps:
-      - name: make test
+      - name: search
         run: |
           cd /home/ec2-user/actions-runner
           echo $GITHUB_SHA
-          sudo ./searchRunner.sh linux ARM64
+          sudo ./searchRunner.sh linux ARM64 arm
           retVal=$?
           if [ $retVal -eq 1 ]; then
               exit 1
           fi
   linux-arm64-unit-test:
-    needs: check-runner
+    needs: search-target-runner
     runs-on: [self-hosted, linux, ARM64, arm]
     steps:
       - uses: actions/setup-go@v2
