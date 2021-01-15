@@ -6,24 +6,24 @@ jobs:
   search-target-runner:
     runs-on: [self-hosted, linux, X64, listener]
     outputs:
-      output1: ${{ steps.step1.outputs.test }}
-    strategy:
-      fail-fast: false
+      output1: ${{ steps.step1.outputs.sha8 }}
     steps:
-      - id: step1
-        run: echo "::set-output name=test::$GITHUB_SHA"
-      - id: step2
+      - name: Get short SHA
+        id: step1
+        run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
+      - name: search
+        id: step2
         run: |
           cd /home/ec2-user/actions-runner
           echo $GITHUB_SHA
-          sudo ./searchRunner.sh linux ARM64 arm
+          sudo ./searchRunner.sh linux ARM64 ${{ steps.step1.outputs.sha8 }}
           retVal=$?
           if [ $retVal -eq 1 ]; then
               exit 1
           fi
   linux-arm64-unit-test:
     needs: search-target-runner
-    runs-on: [self-hosted, linux, ARM64, arm]
+    runs-on: [self-hosted, linux, ARM64, '${{needs.search-target-runner.outputs.output1}}']
     steps:
       - uses: actions/setup-go@v2
         with:
@@ -35,14 +35,3 @@ jobs:
       - name: make test
         run: |
           export GOPATH=$GITHUB_WORKSPACE
-          cd $GITHUB_WORKSPACE/src/github.com/aws/amazon-ecs-agent
-          export CGROUP_PATH="/sys/fs/cgroup"
-          make test-silent
-          make analyze-cover-profile
-  workflow-sha:
-    needs: search-target-runner
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-    steps:
-      - run: echo ${{needs.search-target-runner.outputs.output1}}
