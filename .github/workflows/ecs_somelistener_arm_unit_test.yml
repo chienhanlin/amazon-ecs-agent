@@ -13,7 +13,7 @@ jobs:
         run: |
           cd /home/ec2-user/actions-runner
           echo $GITHUB_SHA
-          sudo ./searchRunner.sh $GITHUB_SHA
+          sudo ./searchRunner.sh linux ARM64
           retVal=$?
           if [ $retVal -eq 1 ]; then
               exit 1
