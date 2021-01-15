@@ -7,17 +7,15 @@ jobs:
     if: ${{ github.event.label.name == 'bot\test' }}
     runs-on: [ self-hosted, linux, X64, listener ]
     outputs:
-      sha8: ${{ steps.step1.outputs.sha8 }}
       os: ${{ steps.step1.outputs.os }}
       arch: ${{ steps.step1.outputs.arch }}
       name: ${{ steps.step1.outputs.name }}
     strategy:
       fail-fast: false
     steps:
-      - name: Get Workflow SHA
+      - name: Set search parameters
         id: step1
         run: |
-          echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
           echo "::set-output name=os::"linux""
           echo "::set-output name=arch::"X64""
           echo "::set-output name=name::"inf""
