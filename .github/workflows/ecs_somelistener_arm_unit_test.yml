@@ -1,0 +1,38 @@
+name: Listener ARM Unit Test
+on:
+  pull_request:
+    types: [labeled]
+jobs:
+  check-runner:
+    if: ${{ github.event.label.name == 'listen' }}
+    runs-on: [self-hosted, linux, X64, listener]
+    strategy:
+      fail-fast: false
+    steps:
+      - name: make test
+        run: |
+          cd /home/ec2-user/actions-runner
+          echo $GITHUB_SHA
+          sudo ./searchRunner.sh $GITHUB_SHA
+          retVal=$?
+          if [ $retVal -eq 1 ]; then
+              exit 1
+          fi
+  linux-arm64-unit-test:
+    needs: check-runner
+    runs-on: [self-hosted, linux, ARM64, arm]
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.15.4
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          path: src/github.com/aws/amazon-ecs-agent
+      - name: make test
+        run: |
+          export GOPATH=$GITHUB_WORKSPACE
+          cd $GITHUB_WORKSPACE/src/github.com/aws/amazon-ecs-agent
+          export CGROUP_PATH="/sys/fs/cgroup"
+          make test-silent
+          make analyze-cover-profile
