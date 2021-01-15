@@ -3,14 +3,42 @@ on:
   pull_request:
     types: [labeled]
 jobs:
-  linux-integ-test:
+  search-runner:
     if: ${{ github.event.label.name == 'bot\test' }}
-    runs-on: [self-hosted, linux, '${{ matrix.arch }}', '${{ matrix.type }}']
+    runs-on: [ self-hosted, linux, X64, listener ]
+    outputs:
+      sha8: ${{ steps.step1.outputs.sha8 }}
+      os: ${{ steps.step1.outputs.os }}
+      arch: ${{ steps.step1.outputs.arch }}
+      name: ${{ steps.step1.outputs.name }}
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Get Workflow SHA
+        id: step1
+        run: |
+          echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
+          echo "::set-output name=os::"linux""
+          echo "::set-output name=arch::"ARM64""
+          echo "::set-output name=name::"arm""
+      - name: Search target self-hosted runner
+        id: step2
+        run: |
+          cd /home/ec2-user/actions-runner
+          sudo ./searchRunner.sh ${{ steps.step1.outputs.os }} ${{ steps.step1.outputs.arch }} ${{ steps.step1.outputs.name }}
+          retVal=$?
+          if [ $retVal -eq 1 ]; then
+              exit 1
+          fi
+  integ-test:
+    needs: search-runner
+    runs-on: [self-hosted, '${{ matrix.os }}', '${{ matrix.arch }}', '${{ matrix.name }}']
     strategy:
       fail-fast: false
       matrix:
-        type: [arm]
-        arch: [ARM64]
+        os: ['${{needs.search-runner.outputs.os}}']
+        arch: ['${{needs.search-runner.outputs.arch}}']
+        name: ['${{needs.search-runner.outputs.name}}']
     steps:
       - uses: actions/setup-go@v2
         with:
