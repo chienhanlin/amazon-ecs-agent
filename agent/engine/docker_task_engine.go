@@ -25,6 +25,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aws/amazon-ecs-agent/agent/engine/image"
+
 	"github.com/aws/amazon-ecs-agent/agent/api"
 	apicontainer "github.com/aws/amazon-ecs-agent/agent/api/container"
 	apicontainerstatus "github.com/aws/amazon-ecs-agent/agent/api/container/status"
@@ -965,6 +967,14 @@ func (engine *DockerTaskEngine) pullAndUpdateContainerReference(task *apitask.Ta
 		engine.state.AddPulledContainer(dockerContainer, task)
 	}
 	engine.updateContainerReference(pullSucceeded, container, task.Arn)
+	if !pullSucceeded && container.IsEssential() {
+		imageError := &image.ImageError{
+			ContainerName: container.Name,
+			ImageName:     container.Image,
+			Error:         metadata.Error,
+		}
+		engine.state.AddImageError(imageError)
+	}
 	return metadata
 }
 

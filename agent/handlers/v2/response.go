@@ -165,6 +165,13 @@ func NewTaskResponse(
 		propagateTagsToMetadata(ecsClient, containerInstanceArn, taskARN, resp, includeV4Metadata)
 	}
 
+	imageErrors := state.AllImageErrors()
+	if len(imageErrors) > 0 && includeV4Metadata {
+		for _, imageError := range imageErrors {
+			metadataErrorHandling(resp, imageError.Error, imageError.ContainerName, taskARN, includeV4Metadata)
+		}
+	}
+
 	return resp, nil
 }
 

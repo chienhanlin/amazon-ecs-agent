@@ -34,6 +34,8 @@ type TaskEngineState interface {
 	AllENIAttachments() []*apieni.ENIAttachment
 	// AllImageStates returns all of the image.ImageStates
 	AllImageStates() []*image.ImageState
+	// AllImageErrors returns all of the image errors
+	AllImageErrors() []*image.ImageError
 	// GetAllContainerIDs returns all of the Container Ids
 	GetAllContainerIDs() []string
 	// ContainerByID returns an apicontainer.DockerContainer for a given container ID
@@ -56,6 +58,8 @@ type TaskEngineState interface {
 	AddContainer(container *apicontainer.DockerContainer, task *apitask.Task)
 	// AddImageState adds an image.ImageState to be stored
 	AddImageState(imageState *image.ImageState)
+	// AddImageError adds an image.ImageError to be stored
+	AddImageError(imageError *image.ImageError)
 	// AddENIAttachment adds an eni attachment from acs to be stored
 	AddENIAttachment(eni *apieni.ENIAttachment)
 	// RemoveENIAttachment removes an eni attachment to stop tracking
@@ -64,11 +68,13 @@ type TaskEngineState interface {
 	ENIByMac(mac string) (*apieni.ENIAttachment, bool)
 	// RemoveTask removes a task from the state
 	RemoveTask(task *apitask.Task)
-	// Reset resets all the fileds in the state
+	// Reset resets all the fields in the state
 	Reset()
 	// RemoveImageState removes an image.ImageState
 	RemoveImageState(imageState *image.ImageState)
-	// AddTaskIPAddress adds ip adddress for a task arn into the state
+	// RemoveImageError removes an image error
+	RemoveImageError(imageName string)
+	// AddTaskIPAddress adds ip address for a task arn into the state
 	AddTaskIPAddress(addr string, taskARN string)
 	// GetTaskByIPAddress gets the task arn for an IP address
 	GetTaskByIPAddress(addr string) (string, bool)
@@ -78,7 +84,6 @@ type TaskEngineState interface {
 	DockerIDByV3EndpointID(v3EndpointID string) (string, bool)
 	// TaskARNByV3EndpointID returns a taskARN for a given v3 endpoint ID
 	TaskARNByV3EndpointID(v3EndpointID string) (string, bool)
-
 	json.Marshaler
 	json.Unmarshaler
 }
@@ -106,6 +111,7 @@ type DockerTaskEngineState struct {
 	idToContainer          map[string]*apicontainer.DockerContainer            // DockerId -> c.DockerContainer
 	eniAttachments         map[string]*apieni.ENIAttachment                    // ENIMac -> apieni.ENIAttachment
 	imageStates            map[string]*image.ImageState
+	imageErrors            map[string]*image.ImageError
 	ipToTask               map[string]string // ip address -> task arn
 	v3EndpointIDToTask     map[string]string // container's v3 endpoint id -> taskarn
 	v3EndpointIDToDockerID map[string]string // container's v3 endpoint id -> DockerId
@@ -132,6 +138,7 @@ func (state *DockerTaskEngineState) initializeDockerTaskEngineState() {
 	state.taskToPulledContainer = make(map[string]map[string]*apicontainer.DockerContainer)
 	state.idToContainer = make(map[string]*apicontainer.DockerContainer)
 	state.imageStates = make(map[string]*image.ImageState)
+	state.imageErrors = make(map[string]*image.ImageError)
 	state.eniAttachments = make(map[string]*apieni.ENIAttachment)
 	state.ipToTask = make(map[string]string)
 	state.v3EndpointIDToTask = make(map[string]string)
@@ -175,6 +182,16 @@ func (state *DockerTaskEngineState) allImageStatesUnsafe() []*image.ImageState {
 		allImageStates = append(allImageStates, imageState)
 	}
 	return allImageStates
+}
+
+func (state *DockerTaskEngineState) AllImageErrors() []*image.ImageError {
+	state.lock.RLock()
+	defer state.lock.RUnlock()
+	var allImageErrors []*image.ImageError
+	for _, imageError := range state.imageErrors {
+		allImageErrors = append(allImageErrors, imageError)
+	}
+	return allImageErrors
 }
 
 // AllENIAttachments returns all the enis managed by ecs on the instance
@@ -424,6 +441,19 @@ func (state *DockerTaskEngineState) AddImageState(imageState *image.ImageState) 
 	state.imageStates[imageState.Image.ImageID] = imageState
 }
 
+// AddImageError adds an image.ImageError to be stored
+func (state *DockerTaskEngineState) AddImageError(imageError *image.ImageError) {
+	if imageError == nil {
+		seelog.Debug("Cannot add an empty image error")
+		return
+	}
+
+	state.lock.Lock()
+	defer state.lock.Unlock()
+
+	state.imageErrors[imageError.ContainerName] = imageError
+}
+
 // RemoveTask removes a task from this state. It removes all containers and
 // other associated metadata. It does acquire the write lock.
 func (state *DockerTaskEngineState) RemoveTask(task *apitask.Task) {
@@ -524,7 +554,23 @@ func (state *DockerTaskEngineState) RemoveImageState(imageState *image.ImageStat
 	delete(state.imageStates, imageState.Image.ImageID)
 }
 
-// AddTaskIPAddress adds ip adddress for a task arn into the state
+func (state *DockerTaskEngineState) RemoveImageError(imageName string) {
+	if imageName == "" {
+		seelog.Debug("Cannot remove empty image name")
+		return
+	}
+	state.lock.Lock()
+	defer state.lock.Unlock()
+
+	_, ok := state.imageErrors[imageName]
+	if !ok {
+		seelog.Debug("Image Error is not found. Cannot be removed")
+		return
+	}
+	delete(state.imageErrors, imageName)
+}
+
+// AddTaskIPAddress adds ip address for a task arn into the state
 func (state *DockerTaskEngineState) AddTaskIPAddress(addr string, taskARN string) {
 	state.lock.Lock()
 	defer state.lock.Unlock()
