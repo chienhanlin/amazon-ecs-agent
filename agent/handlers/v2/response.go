@@ -304,13 +304,13 @@ func NewContainerResponse(
 func metadataErrorHandling(resp *TaskResponse, err error, field, resourceARN string, includeV4Metadata bool) {
 	seelog.Errorf("Task Metadata error: unable to get '%s' for '%s': %s", field, resourceARN, err.Error())
 	if includeV4Metadata {
-		errResp := newErrorResponse(err, field, resourceARN)
+		errResp := NewErrorResponse(err, field, resourceARN)
 		resp.Errors = append(resp.Errors, *errResp)
 	}
 }
 
-// newErrorResponse creates a new error response
-func newErrorResponse(err error, field, resourceARN string) *ErrorResponse {
+// NewErrorResponse creates a new error response
+func NewErrorResponse(err error, field, resourceARN string) *ErrorResponse {
 	errResp := &ErrorResponse{
 		ErrorField:   field,
 		ErrorMessage: err.Error(),

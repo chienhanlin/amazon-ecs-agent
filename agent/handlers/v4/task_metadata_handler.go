@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"net/http"
 
+	v2 "github.com/aws/amazon-ecs-agent/agent/handlers/v2"
+
 	"github.com/aws/amazon-ecs-agent/agent/api"
 	"github.com/aws/amazon-ecs-agent/agent/engine/dockerstate"
 	"github.com/aws/amazon-ecs-agent/agent/handlers/utils"
@@ -79,6 +81,11 @@ func TaskMetadataHandler(state dockerstate.TaskEngineState, ecsClient api.ECSCli
 		for _, dockerContainer := range pulledContainers {
 			taskResponse.Containers = append(taskResponse.Containers,
 				NewPulledContainerResponse(dockerContainer, task.GetPrimaryENI()))
+		}
+
+		for _, taskError := range task.Errors {
+			resp := v2.NewErrorResponse(taskError, taskError.ErrorField, taskError.ResourceARN)
+			taskResponse.Errors = append(taskResponse.Errors, *resp)
 		}
 
 		responseJSON, err := json.Marshal(taskResponse)

@@ -963,6 +963,14 @@ func (engine *DockerTaskEngine) pullAndUpdateContainerReference(task *apitask.Ta
 			Container: container,
 		}
 		engine.state.AddPulledContainer(dockerContainer, task)
+	} else {
+		if container.IsEssential() {
+			task.Errors = append(task.Errors, &apitask.Error{
+				ErrorField:   container.Name,
+				ErrorCode:    "ImagePullFailure",
+				ErrorMessage: metadata.Error.Error(),
+			})
+		}
 	}
 	engine.updateContainerReference(pullSucceeded, container, task.Arn)
 	return metadata

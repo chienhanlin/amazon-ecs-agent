@@ -244,7 +244,7 @@ type Task struct {
 
 	// terminalReason should be used when we explicitly move a task to stopped.
 	// This ensures the task object carries some context for why it was explicitly
-	// stoppped.
+	// stopped.
 	terminalReason     string
 	terminalReasonOnce sync.Once
 
@@ -266,6 +266,9 @@ type Task struct {
 
 	// LaunchType is the launch type of this task.
 	LaunchType string `json:"LaunchType,omitempty"`
+
+	// Errors is errors had been encountered in this task
+	Errors []*Error `json:"Errors,omitempty"`
 
 	// lock is for protecting all fields in the task struct
 	lock sync.RWMutex
